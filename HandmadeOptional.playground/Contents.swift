@@ -354,3 +354,227 @@ import Foundation
 //extension Person: Equatable{}
 
 
+//// switchでnilと比較する
+//enum あるかも<T> {
+//    case ない
+//    case ある(T)
+//}
+//
+//let b = あるかも<Int>.ない
+//switch b {
+//case nil:
+//    print("nil")
+//default:
+//    print("not nil")
+//}
+//
+//// https://github.com/apple/swift/blob/main/stdlib/public/core/Optional.swift#L471
+//
+//// lhsがcase nil、rhsがあるかも<T>.ないを示している
+//extension あるかも {
+//    static func ~=(lhs: _OptionalNilComparisonType, rhs: あるかも<T>) -> Bool {
+//        print("~=, lhs: \(lhs), rhs: \(rhs)")
+//        switch rhs {
+//        case .ある:
+//            return false
+//        case .ない:
+//            return true
+//        }
+//    }
+//}
+
+
+//// 処理をクロージャーに包んで渡す
+//func and(_ a: Bool, _ b: Bool) -> Bool {
+//    print(#function, "start")
+//    defer {
+//        print(#function, "end")
+//    }
+//    if a == true {
+//        if b == true {
+//            return true
+//        } else {
+//            return false
+//        }
+//    } else {
+//        return false
+//    }
+//}
+//
+////print("=======================")
+////print(and(false, false))
+////print(and(false, true))
+////print(and(true, false))
+////print(and(true, true))
+//
+//func fast(_ b: Bool) -> Bool {
+//    print(#function, "start")
+//    defer {
+//        print(#function, "end")
+//    }
+//    return b
+//}
+//
+//func slow(_ b: Bool) -> Bool {
+//    print(#function, "start")
+//    defer {
+//        print(#function, "end")
+//    }
+//    sleep(3)
+//    return b
+//}
+//
+////print("=======================")
+////print(and(fast(true), slow(true)))
+//
+//func andTwo(_ a: Bool, _ b: () -> Bool) -> Bool {
+//    print(#function, "start")
+//    defer {
+//        print(#function, "end")
+//    }
+//    if a == true {
+//        if b() == true {
+//            return true
+//        } else {
+//            return false
+//        }
+//    } else {
+//        return false
+//    }
+//}
+//
+////print("=======================")
+////print(andTwo(fast(false), { slow(false) }))
+////print(andTwo(fast(true), { slow(false) }))
+//
+//func andThree(_ a: Bool, _ b: @autoclosure () -> Bool) -> Bool {
+//    print(#function, "start")
+//    defer {
+//        print(#function, "end")
+//    }
+//    if a == true {
+//        if b() == true {
+//            return true
+//        } else {
+//            return false
+//        }
+//    } else {
+//        return false
+//    }
+//}
+//
+//print("=======================")
+//print(andThree(fast(false), slow(false) ))
+//print(andThree(fast(true), slow(false) ))
+
+
+//// ??を自作する
+//enum あるかも<T> {
+//    case ない
+//    case ある(T)
+//}
+//
+//// https://github.com/apple/swift/blob/main/stdlib/public/core/Optional.swift#L641
+//
+////あるかも<Int>.ない ?? { 10 }
+////
+////func ?? <T>(maybe: あるかも<T>, defaultValue: () -> T) -> T {
+////    switch maybe {
+////    case .ある(let value):
+////        return value
+////    case .ない:
+////        return defaultValue()
+////    }
+////}
+//
+////あるかも<Int>.ない ?? 20
+////あるかも<Int>.ある(10) ?? 20
+//
+//func ?? <T>(maybe: あるかも<T>, defaultValue: @autoclosure () -> T) -> T {
+//    switch maybe {
+//    case .ある(let value):
+//        return value
+//    case .ない:
+//        return defaultValue()
+//    }
+//}
+//
+//func slow(_ n: Int) -> Int {
+//        print(#function, "start")
+//        defer {
+//            print(#function, "end")
+//        }
+//    sleep(3)
+//    return n
+//}
+//
+//あるかも<Int>.ない ?? slow(20)
+//あるかも<Int>.ある(10) ?? slow(20)
+
+
+//// .mapを自作する
+//enum あるかも<Wrapped> {
+//    case ない
+//    case ある(Wrapped)
+//}
+//
+//// https://github.com/apple/swift/blob/main/stdlib/public/core/Optional.swift#L160
+//
+////let result5: あるかも<Int> = あるかも<Int>.ある(10).map {
+////    $0 * 2
+////}
+//
+//extension あるかも {
+//    func map<U>(_ transform: (Wrapped) -> U) -> あるかも<U> {
+//        switch self {
+//        case .ある(let value):
+//            return あるかも<U>.ある(transform(value))
+//        case .ない:
+//            return あるかも<U>.ない
+//        }
+//    }
+//}
+//
+//let result6: あるかも<Int> = あるかも<Int>.ある(10).map { $0 * 2 }
+//let result7: あるかも<Int> = あるかも<Int>.ない.map{ $0 * 2 }
+//let result8: あるかも<String> = あるかも<Int>.ある(10).map { String($0) }
+
+
+// .flatMapを自作する
+enum あるかも<Wrapped> {
+    case ない
+    case ある(Wrapped)
+}
+
+// https://github.com/apple/swift/blob/main/stdlib/public/core/Optional.swift#L191
+
+//let result5: あるかも<Int> = あるかも<Int>.ある(10).flatMap {
+//    _ in return あるかも<Int>.ある(20)
+//}
+
+extension あるかも {
+    func flatMap<U>(_ transform: (Wrapped) -> あるかも<U>) -> あるかも<U> {
+        switch self {
+        case .ある(let value):
+            return transform(value)
+        case .ない:
+            return .ない
+        }
+    }
+}
+
+let result6: あるかも<Int> = あるかも<Int>.ある(10).flatMap { num in
+    あるかも<Int>.ある(num * 2)
+}
+
+let result7: あるかも<Int> = あるかも<Int>.ある(10).flatMap { _ in
+    あるかも<Int>.ない
+}
+
+let result8: あるかも<Int> = あるかも<Int>.ない.flatMap { num in
+    あるかも<Int>.ある(num * 2)
+}
+
+let result9: あるかも<Int> = あるかも<Int>.ない.flatMap { _ in
+    あるかも<Int>.ない
+}
